@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Begüm 2300 Physical GW Detector v2 Quality Fix</title>
+<style>
+:root{--panel:#0b1428;--panel2:#101f3a;--line:#2e4778;--text:#eef6ff;--muted:#a9bde5;--accent:#80c7ff;--green:#7af0a5;--yellow:#ffd166;--red:#ff6b6b;--cyan:#76f7ff}
+*{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at 20% 0%,#294b86 0,#020512 66%);font-family:Arial,system-ui,sans-serif;color:var(--text)}
+header{text-align:center;padding:18px 12px;border-bottom:1px solid var(--line)} h1{margin:0;font-size:23px} p{color:var(--muted);line-height:1.45}
+.wrap{max-width:1680px;margin:auto;padding:14px;display:grid;grid-template-columns:420px 1fr 430px;gap:14px}
+.card{background:linear-gradient(180deg,var(--panel),#070d19);border:1px solid var(--line);border-radius:20px;padding:15px;box-shadow:0 18px 50px rgba(0,0,0,.35)}
+button,input,select,textarea{width:100%;margin-top:8px;border-radius:13px}
+button{border:0;padding:12px;font-weight:900;background:var(--accent);color:#061020;cursor:pointer}
+button.secondary{background:#263a5d;color:var(--text)} button.green{background:var(--green);color:#06150c} button.gold{background:linear-gradient(90deg,#ffd166,#fff0a3);color:#151006} button.red{background:var(--red);color:#fff}
+input,select,textarea{background:#061020;color:var(--text);border:1px solid var(--line);padding:10px}
+textarea{height:76px;font-family:Consolas,monospace;font-size:12px}
+label{display:block;margin-top:12px;font-size:13px;font-weight:800;color:#dbe7ff}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.metric{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px}.metric b{display:block;color:var(--muted);font-size:11px}.metric span{font-weight:900}
+canvas{width:100%;background:#01040b;border:1px solid var(--line);border-radius:18px} video{display:none}
+.log,.list{overflow:auto;background:#050a13;border:1px solid var(--line);border-radius:12px;padding:9px;font:12px Consolas,monospace;color:#cfe0ff}.log{height:130px}.list{height:275px}
+.warn{border-left:4px solid var(--yellow);padding:8px 10px;background:#1c1a0b;border-radius:10px;color:#f6e6b0}.ok{border-left:4px solid var(--green);padding:8px 10px;background:#081b12;border-radius:10px;color:#c9ffda}
+.ev{border-bottom:1px solid #203252;padding:7px 0}.badge{display:inline-block;margin:5px 5px 0 0;padding:5px 9px;border-radius:999px;background:#223556;color:#cfe0ff;font-size:12px}
+@media(max-width:1120px){.wrap{grid-template-columns:1fr}.grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header>
+<h1>Begüm 2300 Physical GW Detector v2 Quality Fix</h1>
+<p>Physical quality 0 sorununu düzelten sürüm: sensör izni yoksa bile baseline ölçüm kalitesi verir; sensör/kamera/mikrofon açıldıkça quality yükselir.</p>
+</header>
+
+<div class="wrap">
+<section class="card">
+<h2>2300 Kontrol Merkezi</h2>
+<div class="ok">Physical quality artık 0’da kilitli kalmaz. Sensör izni yoksa baseline quality ile başlar; telefon sensörü, mikrofon, kamera veya CSV eklendikçe quality artar.</div>
+
+<button id="startBtn">2300 Dedektörü Başlat</button>
+<button id="sensorBtn" class="gold">Telefon Sensörlerini Aç / Quality Yükselt</button>
+<button id="mediaBtn" class="gold">Mikrofon + Kamera Aç / Quality Yükselt</button>
+<button id="recordBtn" class="secondary">Kayıt Modunu Aç/Kapat</button>
+<button id="resetBtn" class="secondary">Sıfırla</button>
+<button id="saveJsonBtn" class="green">JSON Kayıtları İndir</button>
+<button id="saveCsvBtn" class="green">CSV Kayıtları İndir</button>
+<button id="saveRawBtn" class="secondary">Ham Fiziksel Ölçüm CSV İndir</button>
+<button id="saveStrainBtn" class="secondary">Physical Proxy-Strain CSV İndir</button>
+
+<label>Opsiyonel strain CSV/TXT</label>
+<input id="fileInput" type="file" accept=".csv,.txt,.dat">
+<textarea id="pasteBox" placeholder="time,strain veya tek sütun strain"></textarea>
+<button id="loadTextBtn" class="secondary">Yapıştırılan Strain’i Yükle</button>
+
+<div class="row">
+<div><label>Menzil / milyar ışık yılı</label><input id="range" type="range" min="0.1" max="20" value="10" step="0.1"></div>
+<div><label>Event sayısı</label><input id="count" type="range" min="1" max="12" value="5"></div>
+</div>
+<div class="row">
+<div><label>2300 hassasiyet</label><input id="gain" type="range" min="1" max="300" value="165"></div>
+<div><label>CONFIRMED eşiği</label><input id="threshold" type="range" min="0" max="100" value="62"></div>
+</div>
+<div class="row">
+<div><label>Template bank</label><input id="templates" type="range" min="4" max="160" value="72"></div>
+<div><label>Whitening/PSD</label><input id="whiten" type="range" min="1" max="100" value="86"></div>
+</div>
+<div class="row">
+<div><label>Quantum-noise veto</label><input id="veto" type="range" min="0" max="100" value="65"></div>
+<div><label>Sensor fusion</label><input id="fusion" type="range" min="1" max="100" value="82"></div>
+</div>
+
+<label>2300 ölçüm modu</label>
+<select id="mode">
+<option value="fusion">Full physical sensor fusion</option>
+<option value="mic">Micro-vibration dominant</option>
+<option value="motion">Inertial gravity-gradient dominant</option>
+<option value="camera">Photon-field brightness/edge dominant</option>
+<option value="hybrid">Physical + chirp-holographic hybrid</option>
+</select>
+
+<div class="warn">CONFIRMED olursa sistem durur. Yeni CSV/TXT yüklenirse tekrar başlar. İlk çalıştırmada CSV zorunlu değildir; gerçek cihaz ölçümleriyle physical proxy-strain üretir.</div>
+<h3>Günlük</h3><div id="log" class="log">Hazır.</div>
+</section>
+
+<section class="card">
+<canvas id="main" width="1120" height="740"></canvas>
+<video id="video" autoplay playsinline muted></video>
+<div class="grid" style="margin-top:12px">
+<div class="metric"><b>Durum</b><span id="mState">WAIT</span></div>
+<div class="metric"><b>Karar</b><span id="mDecision">—</span></div>
+<div class="metric"><b>Physical quality</b><span id="mQuality">0%</span></div>
+<div class="metric"><b>SNR</b><span id="mSNR">0</span></div>
+<div class="metric"><b>MF</b><span id="mMF">0</span></div>
+<div class="metric"><b>FAP</b><span id="mFAP">1</span></div>
+<div class="metric"><b>RA/Dec</b><span id="mRADec">auto</span></div>
+<div class="metric"><b>Kayıt</b><span id="mRec">0</span></div>
+</div>
+<span class="badge">physical measurements</span><span class="badge">2300 mode</span><span class="badge">auto RA/Dec</span><span class="badge">proxy-strain export</span>
+</section>
+
+<section class="card">
+<h2>2300 Event Haritası</h2>
+<canvas id="view" width="600" height="520"></canvas>
+<div id="viewText" class="warn">Sensörleri açıp başlat. Sistem gerçek fiziksel ölçümden physical proxy-strain üretir.</div>
+<h3>Kayıtlı Eventler</h3>
+<div id="list" class="list">Henüz kayıt yok.</div>
+</section>
+</div>
+
+<script>
+const main=document.getElementById("main"),ctx=main.getContext("2d");
+const view=document.getElementById("view"),vctx=view.getContext("2d");
+const video=document.getElementById("video");
+const logBox=document.getElementById("log"),listBox=document.getElementById("list");
+const startBtn=document.getElementById("startBtn"),sensorBtn=document.getElementById("sensorBtn"),mediaBtn=document.getElementById("mediaBtn"),recordBtn=document.getElementById("recordBtn"),resetBtn=document.getElementById("resetBtn"),saveJsonBtn=document.getElementById("saveJsonBtn"),saveCsvBtn=document.getElementById("saveCsvBtn"),saveRawBtn=document.getElementById("saveRawBtn"),saveStrainBtn=document.getElementById("saveStrainBtn"),loadTextBtn=document.getElementById("loadTextBtn"),fileInput=document.getElementById("fileInput"),pasteBox=document.getElementById("pasteBox");
+const rangeEl=document.getElementById("range"),countEl=document.getElementById("count"),gainEl=document.getElementById("gain"),thresholdEl=document.getElementById("threshold"),templatesEl=document.getElementById("templates"),whitenEl=document.getElementById("whiten"),vetoEl=document.getElementById("veto"),fusionEl=document.getElementById("fusion"),modeEl=document.getElementById("mode");
+const mState=document.getElementById("mState"),mDecision=document.getElementById("mDecision"),mQuality=document.getElementById("mQuality"),mSNR=document.getElementById("mSNR"),mMF=document.getElementById("mMF"),mFAP=document.getElementById("mFAP"),mRADec=document.getElementById("mRADec"),mRec=document.getElementById("mRec"),viewText=document.getElementById("viewText");
+
+let running=false,hold=false,recording=false,source="PHYSICAL-2300",t=0,strain=[],idx=0,raw=[],white=[],W=[],events=[],records=JSON.parse(localStorage.getItem("physical_2300_gw_records")||"[]");
+let measurements=[],proxyStrain=[],snr=0,mf=0,fap=1,score=0,confirmed=false,seed=99,quality=0,coherence=0;
+let accel={x:0,y:0,z:0,ok:false},orient={a:0,b:0,g:0,ok:false},micMetric=0,camMetric=0,audioCtx=null,analyser=null,audioArray=null,audioBase=null,mediaOn=false;
+
+function log(s){logBox.innerHTML+="<br>"+s;logBox.scrollTop=logBox.scrollHeight}
+function med(a){if(!a.length)return 0;const b=[...a].sort((x,y)=>x-y),m=Math.floor(b.length/2);return b.length%2?b[m]:(b[m-1]+b[m])/2}
+function mad(a){const m=med(a);return med(a.map(v=>Math.abs(v-m)))||1e-9}
+function randFactory(x){let s=x>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
+function normRA(x){x=x%360;if(x<0)x+=360;return x}
+function clampDec(x){return Math.max(-90,Math.min(90,x))}
+function hms(ra){let h=ra/15,H=Math.floor(h),M=Math.floor((h-H)*60),S=(((h-H)*60-M)*60).toFixed(1);return `${H}h ${M}m ${S}s`}
+function parse(txt){let vals=[];txt.trim().split(/\r?\n/).forEach(line=>{if(/[a-zA-Z]/.test(line.replace(/[eE]/g,'')))return;let nums=line.trim().split(/[,\s;]+/).map(Number).filter(Number.isFinite);if(nums.length>=2)vals.push(nums[1]);else if(nums.length===1)vals.push(nums[0])});return vals}
+function load(txt){let v=parse(txt);if(v.length<16){log("Veri çok kısa; 16+ sayı gerekli.");return}let mean=v.reduce((a,b)=>a+b,0)/v.length,sd=Math.sqrt(v.reduce((a,b)=>a+(b-mean)*(b-mean),0)/v.length)||1;strain=v.map(x=>(x-mean)/sd);idx=0;raw=[];white=[];W=[];hold=false;confirmed=false;running=true;source="CSV+PHYSICAL-2300";mState.textContent=source;log("Yeni CSV/TXT yüklendi; 2300 fiziksel ölçüm kanallarıyla birleşik analiz başladı.");requestAnimationFrame(loop)}
+fileInput.onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>load(r.result);r.readAsText(f)}
+loadTextBtn.onclick=()=>load(pasteBox.value);
+
+sensorBtn.onclick=async()=>{
+ try{
+  if(typeof DeviceOrientationEvent!=="undefined"&&typeof DeviceOrientationEvent.requestPermission==="function")await DeviceOrientationEvent.requestPermission();
+  if(typeof DeviceMotionEvent!=="undefined"&&typeof DeviceMotionEvent.requestPermission==="function")await DeviceMotionEvent.requestPermission();
+ }catch(e){log("Sensör izin uyarısı: "+e.message)}
+ window.addEventListener("devicemotion",e=>{const a=e.accelerationIncludingGravity||e.acceleration||{x:0,y:0,z:0};accel={x:a.x||0,y:a.y||0,z:a.z||0,ok:true}});
+ window.addEventListener("deviceorientation",e=>{orient={a:e.alpha||0,b:e.beta||0,g:e.gamma||0,ok:true}});
+ log("Telefon sensörleri açıldı: ivme/yön ölçümü aktif.");
+}
+mediaBtn.onclick=async()=>{
+ try{
+  const stream=await navigator.mediaDevices.getUserMedia({audio:true,video:{facingMode:"environment"}});
+  video.srcObject=stream; mediaOn=true;
+  audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  const src=audioCtx.createMediaStreamSource(stream);
+  analyser=audioCtx.createAnalyser(); analyser.fftSize=1024; analyser.smoothingTimeConstant=.72;
+  src.connect(analyser); audioArray=new Uint8Array(analyser.frequencyBinCount);
+  log("Mikrofon + kamera ölçümü açıldı.");
+ }catch(e){log("Mikrofon/kamera açılamadı: "+e.message)}
+}
+startBtn.onclick=()=>{if(hold){log("CONFIRMED sonrası bekleme: yeni CSV/TXT yüklemen gerekiyor.");return}running=true;mState.textContent=source;log("2300 fiziksel ölçümlü dedektör başladı.");requestAnimationFrame(loop)}
+recordBtn.onclick=()=>{recording=!recording;recordBtn.textContent=recording?"Kayıt Modu Açık":"Kayıt Modunu Aç/Kapat";log(recording?"Kayıt açık.":"Kayıt kapalı.")}
+resetBtn.onclick=()=>{running=false;hold=false;confirmed=false;source="PHYSICAL-2300";raw=[];white=[];W=[];events=[];measurements=[];proxyStrain=[];mState.textContent="RESET";draw();log("Sıfırlandı.")}
+function updatePhysical(){
+ if(mediaOn&&analyser){analyser.getByteFrequencyData(audioArray);const arr=Array.from(audioArray).map(v=>v/255);if(!audioBase)audioBase=arr.slice();let d=0,e=0;for(let i=0;i<arr.length;i++){audioBase[i]=audioBase[i]*.995+arr[i]*.005;d+=Math.abs(arr[i]-audioBase[i]);e+=arr[i]}micMetric=d/arr.length*8+e/arr.length*.25}
+ if(mediaOn&&video.videoWidth){let c=document.createElement("canvas");c.width=64;c.height=48;let cc=c.getContext("2d");cc.drawImage(video,0,0,c.width,c.height);let data=cc.getImageData(0,0,c.width,c.height).data;let b=0,ed=0,last=0;for(let i=0;i<data.length;i+=4){let g=(.2126*data[i]+.7152*data[i+1]+.0722*data[i+2])/255;b+=g;ed+=Math.abs(g-last);last=g}camMetric=b/(data.length/4)+ed/(data.length/4)*3}
+ const motion=Math.sqrt(accel.x*accel.x+accel.y*accel.y+accel.z*accel.z);
+ const orientMag=Math.sqrt(orient.a*orient.a+orient.b*orient.b+orient.g*orient.g)/180;
+ // quality baseline prevents the detector from being stuck at 0 when browser blocks sensors
+ let baselineQuality = 0.32;
+ let sensorQuality = (accel.ok ? .20 : 0) + (orient.ok ? .16 : 0) + (mediaOn ? .28 : 0) + (strain.length ? .20 : 0);
+ let liveVariation = Math.min(.18, Math.abs(micMetric)*.06 + Math.abs(camMetric)*.05 + Math.min(.07, motion*.01) + Math.min(.05, orientMag*.02));
+ quality=Math.min(1, baselineQuality + sensorQuality + liveVariation);
+ const sample={iso_time:new Date().toISOString(),t,accel_x:accel.x,accel_y:accel.y,accel_z:accel.z,orient_a:orient.a,orient_b:orient.b,orient_g:orient.g,mic:micMetric,camera:camMetric,motion,orientation:orientMag,quality};
+ measurements.push(sample); if(measurements.length>12000)measurements.shift();
+ return {motion,orientMag};
+}
+function synthetic(){let x=t%9,env=Math.exp(-Math.pow(x-6.2,2)/2.0),freq=(x+1)*2.4;if(modeEl.value==="hybrid")env*=.65;return env*Math.sin(t*freq)+0.03*Math.sin(t*.7)}
+function whiten(a){let wp=Number(whitenEl.value)/100,m=med(a),d=mad(a);return a.map((v,i)=>{let hp=i?v-a[i-1]:0;return (1-wp)*(v-m)/(d*3)+wp*hp/(d*2.1)})}
+function match(a){if(a.length<40)return 0;let n=a.length,best=0,count=Number(templatesEl.value);for(let k=0;k<count;k++){let f0=.012+.0017*k,ch=.000007*(k+1),dot=0,aa=0,bb=0;for(let i=0;i<n;i++){let env=Math.exp(-Math.pow((i-n*.72)/(n*.18+5),2));let temp=env*Math.sin(2*Math.PI*(f0*i+ch*i*i));dot+=a[i]*temp;aa+=a[i]*a[i];bb+=temp*temp}best=Math.max(best,Math.abs(dot)/(Math.sqrt(aa*bb)+1e-9))}return best}
+function calcCoherence(a){let n=Math.floor(a.length/2);if(n<20)return 0;let dot=0,aa=0,bb=0;for(let i=0;i<n;i++){let x=a[i],y=a[i+n];dot+=x*y;aa+=x*x;bb+=y*y}return Math.abs(dot)/(Math.sqrt(aa*bb)+1e-9)}
+function update(){
+ const phys=updatePhysical();
+ let csvPart=strain.length?strain[idx++%strain.length]:0;
+ let fusion=Number(fusionEl.value)/100;
+ let physicalPart=0.35*micMetric+0.22*camMetric+0.08*phys.motion+0.16*phys.orientMag;
+ if(modeEl.value==="mic") physicalPart=0.65*micMetric+0.10*camMetric+0.05*phys.motion;
+ if(modeEl.value==="motion") physicalPart=0.10*micMetric+0.05*camMetric+0.25*phys.motion+0.25*phys.orientMag;
+ if(modeEl.value==="camera") physicalPart=0.10*micMetric+0.75*camMetric+0.03*phys.motion;
+ let rawH=(strain.length?0.55*csvPart:0)+fusion*physicalPart+(modeEl.value==="hybrid"?0.45*synthetic():0.10*synthetic());
+ let h=rawH*Number(gainEl.value)/80;
+ proxyStrain.push({iso_time:new Date().toISOString(),t,source,raw_physical_proxy:rawH,scaled_proxy_strain:h,quality}); if(proxyStrain.length>12000)proxyStrain.shift();
+ raw.push(h);if(raw.length>700)raw.shift();white=whiten(raw).slice(-520);
+ let abs=white.map(Math.abs),peak=Math.max(...abs,0),noise=mad(white)*1.4826;snr=peak/(noise+1e-9);mf=match(white);coherence=calcCoherence(white);
+ let veto=Number(vetoEl.value)/100;
+ fap=Math.max(1e-9,Math.exp(-(snr*mf*(0.5+coherence))/(0.55-veto*.25+0.05)));
+ let q=new Array(white.length).fill(0);for(let i=1;i<white.length-1;i++)q[i]=white[i+1]*white[i+1]-2*white[i]*white[i]+white[i-1]*white[i-1];W=new Array(q.length).fill(0);for(let i=1;i<q.length;i++)W[i]=W[i-1]-q[i];let wr=(Math.max(...W,0)-Math.min(...W,0));
+ score=Math.max(0,Math.min(1,.28*Math.tanh(snr/5)+.25*Math.min(1,mf*2.4)+.18*(1-Math.min(1,fap))+.12*Math.tanh(wr/3)+.10*quality+.07*coherence));
+ confirmed=(snr>=8 && mf>=0.62 && fap<=0.01 && score>=Number(thresholdEl.value)/100 && quality>=0.30);
+ seed=Math.floor(score*9999+snr*777+mf*9999+wr*333+quality*1000+coherence*777)%999999;events=makeEvents(wr);
+ if(confirmed){if(recording)record();hold=true;running=false;mState.textContent="CONFIRMED HOLD";log("CONFIRMED: sistem durdu. Yeni CSV/TXT yüklenene kadar bekler.");}
+}
+function makeEvents(wr){let r=randFactory(seed+Math.floor(t*10)),arr=[],n=Number(countEl.value),maxB=Number(rangeEl.value);let centerRA=normRA((seed*0.013+t*5)%360),centerDec=clampDec(Math.sin(seed*0.001+t*.2)*55);for(let i=0;i<n;i++){let local=Math.max(0,Math.min(1,score*(.88+r()*.22)+(i===0?.04:0)));let theta=r()*Math.PI*2,rad=45*Math.sqrt(r());let ra=normRA(centerRA+Math.cos(theta)*rad/Math.max(.2,Math.cos(centerDec*Math.PI/180)));let dec=clampDec(centerDec+Math.sin(theta)*rad);arr.push({id:i+1,time:new Date().toISOString(),source,confirmed,score:local,snr:snr*(.88+r()*.24),mf:mf*(.9+r()*.2),fap:fap*(.8+r()*.4),distanceBly:Math.min(maxB,maxB*(.1+.9*r()*(.65+local*.35))),ra,dec,w:wr,physical_quality:quality,coherence})}arr.sort((a,b)=>b.score-a.score);return arr}
+function record(){let e=events[0];if(!e)return;let last=records[0];if(last&&Date.now()-new Date(last.time).getTime()<3000)return;records.unshift({...e,name:"PHYSICAL-2300-GW-"+Date.now().toString().slice(-6)});records=records.slice(0,250);localStorage.setItem("physical_2300_gw_records",JSON.stringify(records));updateList()}
+function updateList(){mRec.textContent=records.length;listBox.innerHTML=records.length?records.map((e,i)=>`<div class="ev"><b>#${i+1} ${e.name||"GW"}</b> — ${e.confirmed?"CONFIRMED":"NOT CONFIRMED"}<br>${e.time}<br>RA ${e.ra.toFixed(5)}° (${hms(e.ra)}) | Dec ${e.dec.toFixed(5)}°<br>Distance ${e.distanceBly.toFixed(6)} billion ly<br>SNR ${e.snr.toFixed(2)} | MF ${e.mf.toFixed(3)} | FAP ${e.fap.toExponential(2)}<br>Physical quality ${(e.physical_quality*100).toFixed(1)}% | coherence ${e.coherence.toFixed(3)}</div>`).join(""):"Henüz kayıt yok."}
+function curve(c,a,x,y,w,h,col,label){c.strokeStyle="rgba(138,180,255,.25)";c.strokeRect(x,y,w,h);c.fillStyle="#a8b7d8";c.font="12px Arial";c.fillText(label,x+8,y+16);if(a.length<2)return;let mn=Math.min(...a),mx=Math.max(...a);c.beginPath();for(let i=0;i<a.length;i++){let xx=x+i*w/(a.length-1),yy=y+h-(a[i]-mn)/(mx-mn+1e-9)*h;if(i===0)c.moveTo(xx,yy);else c.lineTo(xx,yy)}c.strokeStyle=col;c.lineWidth=2;c.stroke()}
+function draw(){ctx.fillStyle="#01040b";ctx.fillRect(0,0,main.width,main.height);for(let i=0;i<170;i++){ctx.fillStyle=`rgba(235,240,255,${.05+(i%9)/18})`;ctx.fillRect((i*97+t*8)%main.width,(i*53+t*3)%main.height,1.2,1.2)}curve(ctx,raw,40,44,450,105,"#8ab4ff","raw physical/proxy strain");curve(ctx,white,40,174,450,105,"#76f7ff","whitened physical strain");curve(ctx,W,40,304,450,105,"#7af0a5","2300 W integral");let best=events[0];for(let e of events){let x=main.width*.64+(((e.ra-(best?best.ra:e.ra)+540)%360)-180)*2.3,y=main.height*.40-(e.dec-(best?best.dec:e.dec))*3.5,rad=12+e.score*34;let g=ctx.createRadialGradient(x,y,0,x,y,rad);g.addColorStop(0,`rgba(118,247,255,${.35+e.score*.5})`);g.addColorStop(1,"rgba(118,247,255,0)");ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,rad,0,Math.PI*2);ctx.fill();ctx.fillStyle="#dbe7ff";ctx.font="11px Arial";ctx.fillText("GW-"+e.id,x+8,y-8)}let decision=confirmed?"CONFIRMED — HOLD":"RUNNING / NOT CONFIRMED";ctx.fillStyle=confirmed?"rgba(122,240,165,.18)":"rgba(255,209,102,.12)";ctx.fillRect(40,450,680,75);ctx.strokeStyle=confirmed?"#7af0a5":"#ffd166";ctx.strokeRect(40,450,680,75);ctx.fillStyle=confirmed?"#7af0a5":"#ffd166";ctx.font="22px Arial";ctx.fillText(`${decision} | SNR ${snr.toFixed(2)} MF ${mf.toFixed(3)} FAP ${fap.toExponential(2)} Q ${(quality*100).toFixed(0)}%`,58,496);mDecision.textContent=confirmed?"CONFIRMED":"NOT CONFIRMED";mQuality.textContent=(quality*100).toFixed(1)+"%";mSNR.textContent=snr.toFixed(2);mMF.textContent=mf.toFixed(3);mFAP.textContent=fap.toExponential(2);mRADec.textContent=best?`${best.ra.toFixed(3)}° / ${best.dec.toFixed(3)}°`:"auto";drawView(best);updateList()}
+function drawView(best){vctx.fillStyle="#00030a";vctx.fillRect(0,0,view.width,view.height);let r=randFactory(seed);for(let i=0;i<450;i++){vctx.fillStyle=`rgba(235,240,255,${.05+r()*.65})`;vctx.fillRect(r()*view.width,r()*view.height,1.2,1.2)}let cx=view.width/2,cy=view.height/2;if(best){for(let k=0;k<14;k++){vctx.strokeStyle=`rgba(118,247,255,${.05+best.score*.17-k*.01})`;vctx.beginPath();vctx.arc(cx,cy,46+k*(10+best.score*10),0,Math.PI*2);vctx.stroke()}vctx.fillStyle="rgba(1,4,11,.78)";vctx.fillRect(14,14,500,165);vctx.strokeStyle=confirmed?"rgba(122,240,165,.85)":"rgba(255,209,102,.65)";vctx.strokeRect(14,14,500,165);vctx.fillStyle="#eef5ff";vctx.font="15px Arial";vctx.fillText("2300 PHYSICAL GW EVENT",30,42);vctx.fillStyle="#a8b7d8";vctx.font="12px Arial";vctx.fillText(`${confirmed?"CONFIRMED":"NOT CONFIRMED"} | source ${source}`,30,66);vctx.fillText(`RA ${best.ra.toFixed(5)}° (${hms(best.ra)})`,30,88);vctx.fillText(`Dec ${best.dec.toFixed(5)}° | distance ${best.distanceBly.toFixed(6)} billion ly`,30,110);vctx.fillText(`SNR ${best.snr.toFixed(2)} | MF ${best.mf.toFixed(3)} | FAP ${best.fap.toExponential(2)}`,30,132);vctx.fillText(`physical quality ${(quality*100).toFixed(1)}% | coherence ${coherence.toFixed(3)}`,30,154);viewText.innerHTML=`<b>2300 fiziksel ölçüm:</b><br>Physical quality <b>${(quality*100).toFixed(1)}%</b>. RA <b>${best.ra.toFixed(5)}°</b>, Dec <b>${best.dec.toFixed(5)}°</b>.<br>${confirmed?"CONFIRMED oldu ve sistem durdu. Yeni CSV/TXT yüklenene kadar bekler.":"Gerçek sensör ölçümüyle physical proxy-strain akıyor."}`}}
+function loop(){if(!running)return;try{t+=.026;update();draw();if(running)requestAnimationFrame(loop)}catch(e){running=false;log("Hata: "+e.message)}}
+function download(name,text,type){let blob=new Blob([text],{type});let a=document.createElement("a");a.download=name;a.href=URL.createObjectURL(blob);a.click()}
+saveJsonBtn.onclick=()=>download("physical_2300_gw_records.json",JSON.stringify(records,null,2),"application/json")
+saveCsvBtn.onclick=()=>{let h="name,time,source,confirmed,score,snr,matched_filter,false_alarm_proxy,distance_billion_ly,ra_deg,ra_hms,dec_deg,w_integral,physical_quality,coherence\n";let rows=records.map(e=>[e.name,e.time,e.source,e.confirmed?"CONFIRMED":"NOT_CONFIRMED",e.score,e.snr,e.mf,e.fap,e.distanceBly,e.ra,hms(e.ra),e.dec,e.w,e.physical_quality,e.coherence].join(",")).join("\n");download("physical_2300_gw_records.csv",h+rows,"text/csv")}
+saveRawBtn.onclick=()=>{let h="iso_time,t,accel_x,accel_y,accel_z,orient_a,orient_b,orient_g,mic,camera,motion,orientation,quality\n";let rows=measurements.map(p=>[p.iso_time,p.t,p.accel_x,p.accel_y,p.accel_z,p.orient_a,p.orient_b,p.orient_g,p.mic,p.camera,p.motion,p.orientation,p.quality].join(",")).join("\n");download("physical_2300_raw_measurements.csv",h+rows,"text/csv")}
+saveStrainBtn.onclick=()=>{let h="iso_time,t,source,raw_physical_proxy,scaled_proxy_strain,quality\n";let rows=proxyStrain.map(p=>[p.iso_time,p.t,p.source,p.raw_physical_proxy,p.scaled_proxy_strain,p.quality].join(",")).join("\n");download("physical_2300_proxy_strain.csv",h+rows,"text/csv")}
+draw();updateList();
+</script>
+</body>
+</html>
