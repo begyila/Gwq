@@ -1,8 +1,17 @@
-.github/workflows/main.yml
-build.gradle
-settings.gradle
-app/build.gradle
-app/src/main/AndroidManifest.xml
-app/src/main/java/com/begum/gwdetector/MainActivity.java
-app/src/main/assets/index.html
-app/src/main/res/values/styles.xml
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'BegumGWDetector'
